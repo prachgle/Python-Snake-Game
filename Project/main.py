@@ -503,7 +503,6 @@ class Main:
         from snake import SnakeGame
         print("Starting singleplayer mode...")
         self.in_game = True
-        sounds = [self.buff_sound, self.death_sound, self.debuff_sound, self.eat_sound, self.shift_sound]
         game = SnakeGame(self.screen)
         game.run()
         self.in_game = False
