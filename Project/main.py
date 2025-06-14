@@ -5,8 +5,11 @@ import os
 import json
 
 
+
 FONT_PATH = "resources/Daydream.ttf"
 CONFIG_PATH = "resources/config.json"
+SOUND_PATH = "resources/sounds/fruit.wav"
+
 TEXT_COLOR = (255, 255, 255)
 
 BACKGROUND_START = (48, 25, 52)
@@ -28,8 +31,6 @@ def save_config(settings):
         raise FileNotFoundError("Config file not found.")
     with open(CONFIG_PATH, "w") as file:
         json.dump(settings, file, indent=4)
-
-        
 
 class BackgroundSnake:
     def __init__(self, screen):
@@ -74,6 +75,9 @@ class Button:
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(event.pos):
             if self.callback:
+                sound = pygame.mixer.Sound("resources/sounds/fruit.wav")
+                sound.set_volume(load_config()["sound_effects_volume"])
+                sound.play()
                 self.callback()
 
 class CircleButtons:
@@ -94,6 +98,9 @@ class CircleButtons:
         
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(event.pos):
+            sound = pygame.mixer.Sound("resources/sounds/fruit.wav")
+            sound.set_volume(load_config()["sound_effects_volume"])
+            sound.play()
             self.action()
 
 class KeyBindings:
@@ -126,7 +133,7 @@ class KeyBindings:
         self.key_buttons.clear()
         for player in ["player1", "player2"]:
             for action in self.config["key_bindings"][player]:
-                btn = Button("...", None, 0, 0, 200, 40,  # Font and size assigned later
+                btn = Button("...", None, 0, 0, 200, 40,
                              callback=lambda p=player, a=action: self.set_key(p, a))
                 self.key_buttons[(player, action)] = btn
 
@@ -242,8 +249,8 @@ class SettingsMenu:
         ]
 
         self.button_action = {
-            "win_minus": (self.decrease_window_size, False),
-            "win_plus": (self.increase_window_size, True),
+            # "win_minus": (self.decrease_window_size, False),
+            # "win_plus": (self.increase_window_size, True),
             "music_minus": (self.decrease_music_volume, False),
             "music_plus": (self.increase_music_volume, True),   
             "sounds_minus": (self.decrease_sounds_volume, False),
@@ -261,7 +268,7 @@ class SettingsMenu:
 
         self.scroll_offset = 0
         self.scroll_speed = 40
-        self.total_rows = 6
+        self.total_rows = 5
         
     def draw(self, screen):
         width, height = self.settings["window_size"]
@@ -283,9 +290,12 @@ class SettingsMenu:
             title_surface = self.title_font.render("Settings", True, TEXT_COLOR)
             screen.blit(title_surface, title_surface.get_rect(center=(cx, int(80 * scale))))
 
-        labels = ["Window Size", "Music Volume", "Sounds Volume", "Game Speed"]
+        labels = [
+                # "Window Size", 
+                  "Music Volume", 
+                  "Sounds Volume", "Game Speed"]
         values = [
-            f"{self.settings['window_size'][0]}x{self.settings['window_size'][1]}",
+            # f"{self.settings['window_size'][0]}x{self.settings['window_size'][1]}",
             f"{int(self.settings['music_volume'] * 100)}%",
             f"{int(self.settings['sound_effects_volume'] * 100)}%",
             f"{int(self.settings['game_speed'] * 1)}"
@@ -306,14 +316,14 @@ class SettingsMenu:
         def pos(i, side):
             return (cx + int(side * 100 * scale), row_y(i) + button_offset)
         
-        self.buttons["win_minus"].center = pos(0, -1)
-        self.buttons["win_plus"].center = pos(0, 1)
-        self.buttons["music_minus"].center = pos(1, -1)
-        self.buttons["music_plus"].center = pos(1, 1)
-        self.buttons["sounds_minus"].center = pos(2, -1)
-        self.buttons["sounds_plus"].center = pos(2, 1)
-        self.buttons["speed_minus"].center = pos(3, -1)
-        self.buttons["speed_plus"].center = pos(3, 1)
+        # self.buttons["win_minus"].center = pos(0, -1)
+        # self.buttons["win_plus"].center = pos(0, 1)
+        self.buttons["music_minus"].center = pos(0, -1)
+        self.buttons["music_plus"].center = pos(0, 1)
+        self.buttons["sounds_minus"].center = pos(1, -1)
+        self.buttons["sounds_plus"].center = pos(1, 1)
+        self.buttons["speed_minus"].center = pos(2, -1)
+        self.buttons["speed_plus"].center = pos(2, 1)
 
         for button in self.buttons.values():
             button.rect.center = button.center
@@ -323,7 +333,7 @@ class SettingsMenu:
                 button.draw(screen)
         
         # Key Bindings button
-        y_key = row_y(4)
+        y_key = row_y(3)
         self.key_button.rect.size = (int(220 * scale), int(50 * scale))
         self.key_button.rect.center = (cx, y_key + int(20 * scale))
         self.key_button.font = self.font
@@ -331,7 +341,7 @@ class SettingsMenu:
             self.key_button.draw(screen, pygame.mouse.get_pos())
 
         # Back button
-        y_back = row_y(5)
+        y_back = row_y(4)
         self.back_button.rect.size = (int(180 * scale), int(50 * scale))
         self.back_button.rect.center = (cx, y_back)
         self.back_button.font = self.font
@@ -387,21 +397,21 @@ class SettingsMenu:
         save_config(self.settings)
     
     def increase_music_volume(self):
-        self.settings["music_volume"] = min(self.settings["music_volume"] + 0.01, 1.0)
+        self.settings["music_volume"] = min(self.settings["music_volume"] + 0.1, 1.0)
         pygame.mixer.music.set_volume(self.settings["music_volume"])
         save_config(self.settings)
     
     def decrease_music_volume(self):
-        self.settings["music_volume"] = max(self.settings["music_volume"] - 0.01, 0.0)
+        self.settings["music_volume"] = max(self.settings["music_volume"] - 0.1, 0.0)
         pygame.mixer.music.set_volume(self.settings["music_volume"])
         save_config(self.settings)
     
     def increase_sounds_volume(self):
-        self.settings["sound_effects_volume"] = min(self.settings["sound_effects_volume"] + 0.01, 1.0)
+        self.settings["sound_effects_volume"] = min(self.settings["sound_effects_volume"] + 0.1, 1.0)
         save_config(self.settings)
 
     def decrease_sounds_volume(self):
-        self.settings["sound_effects_volume"] = max(self.settings["sound_effects_volume"] - 0.01, 0.0)
+        self.settings["sound_effects_volume"] = max(self.settings["sound_effects_volume"] - 0.1, 0.0)
         save_config(self.settings)
 
     def increase_speed(self):
@@ -419,13 +429,11 @@ class SettingsMenu:
     def back_to_main_menu(self):
         self.main.in_settings = False
 
-
-
 class Main:
     def __init__(self):
         pygame.init()
         self.settings = load_config()
-        self.screen = pygame.display.set_mode(self.settings["window_size"])
+        self.screen = pygame.display.set_mode(self.settings["window_size"], 0, 32)
         pygame.display.set_caption("Greedy Snake")
         self.clock = pygame.time.Clock()
 
@@ -439,15 +447,26 @@ class Main:
         self.settings_menu = SettingsMenu(self)
         self.key_bindings_menu = KeyBindings(self)
 
-        self.create_buttons()
+        self.in_game = False
+        self.game_screen = None
 
         pygame.mixer.init()
+        self.death_sound = pygame.mixer.Sound("resources/sounds/death.wav")
+        self.shift_sound = pygame.mixer.Sound("resources/sounds/shift.wav")
+        self.eat_sound = pygame.mixer.Sound("resources/sounds/fruit.wav")
+        self.buff_sound = pygame.mixer.Sound("resources/sounds/buff.wav")
+        self.debuff_sound = pygame.mixer.Sound("resources/sounds/debuff.wav")
+
         try:
             pygame.mixer.music.load("resources/music.mp3")
             pygame.mixer.music.set_volume(self.settings["music_volume"])
             pygame.mixer.music.play(-1)
+            # sound = pygame.mixer.Sound("resources/sounds/fruit.wav")
+            # sound.set_volume(load_config["sound_effects_volume"])
         except pygame.error as e:
             print("Failed to load music:", e)
+        
+        self.create_buttons()
 
     
     def create_buttons(self):
@@ -478,12 +497,17 @@ class Main:
         self.screen.blit(title_surface, title_rect)
 
     def open_settings(self):
-        #TO.DO: Implement settings menu
         self.in_settings = True
 
     def start_singleplayer(self):
+        from snake import SnakeGame
         print("Starting singleplayer mode...")
-        # TO.DO: Implement singleplayer game logic
+        self.in_game = True
+        sounds = [self.buff_sound, self.death_sound, self.debuff_sound, self.eat_sound, self.shift_sound]
+        game = SnakeGame(self.screen)
+        game.run()
+        self.in_game = False
+
 
     def start_multiplayer(self):
         print("Starting multiplayer mode...")
@@ -498,11 +522,17 @@ class Main:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.exit_game()
+            # elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE and self.in_game:
+            #     self.in_game = False
+            #     self.game_screen = None
 
             if self.in_settings:
                 self.settings_menu.handle_event(event)
             elif self.in_key_bindings:
                 self.key_bindings_menu.handle_event(event)
+            # elif self.in_game:
+            #     keys = pygame.key.get_pressed()
+            #     self.game_screen.handle_input(keys)
             else:
                 for button in self.buttons:
                     button.handle_event(event)
@@ -540,8 +570,6 @@ class Main:
                 for snake in self.snakes:
                     snake.move()
                     snake.draw()
-                
-                self.draw_title()
 
                 mouse_pos = pygame.mouse.get_pos()
                 for button in self.buttons:

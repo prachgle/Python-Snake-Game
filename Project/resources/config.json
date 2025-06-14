@@ -1,11 +1,11 @@
 {
     "window_size": [
-        1024,
-        768
+        1280,
+        720
     ],
     "game_speed": 10.0,
-    "music_volume": 0.1,
-    "sound_effects_volume": 1.0,
+    "music_volume": 0.10000000000000003,
+    "sound_effects_volume": 0.6000000000000001,
     "key_bindings": {
         "player1": {
             "move_up": "K_w",
@@ -13,7 +13,7 @@
             "move_left": "K_a",
             "move_right": "K_d",
             "sprint": "K_LSHIFT",
-            "pause": "K_ESCAPE"
+            "pause": "K_escape"
         },
         "player2": {
             "move_up": "K_UP",
@@ -21,7 +21,7 @@
             "move_left": "K_LEFT",
             "move_right": "K_RIGHT",
             "sprint": "K_RSHIFT",
-            "pause": "K_escape"
+            "pause": "K_backspace"
         }
     }
 }
