@@ -24,6 +24,11 @@ def load_config():
         raise FileNotFoundError("Config file not found.")
     with open(CONFIG_PATH, "r") as file:
         config = json.load(file)
+    for player in config["key_bindings"]:
+        for action in config["key_bindings"][player]:
+            key_str = config["key_bindings"][player][action]
+            if isinstance(key_str, str):  # Only convert if it's a string
+                config["key_bindings"][player][action] = getattr(pygame, key_str)
     return config
     
 def save_config(settings):
@@ -117,7 +122,10 @@ class KeyBindings:
         self.back_button = Button("Back", None, 0, 0, 150, 50, self.back_to_settings)  # Font assigned later
         self.create_buttons()
         self.scale_ui()
-    
+
+    def parse_key_name(self, key_name):
+        return getattr(pygame, key_name, None)
+
     def get_max_scroll_offset(self):
         total_height = 0
         for player in ["player1", "player2"]:
@@ -136,6 +144,9 @@ class KeyBindings:
                 btn = Button("...", None, 0, 0, 200, 40,
                              callback=lambda p=player, a=action: self.set_key(p, a))
                 self.key_buttons[(player, action)] = btn
+        
+        for (player, action), button in self.key_buttons.items():
+            button.text = self.format_key(self.config["key_bindings"][player][action])
 
     def set_key(self, player, action):
         self.key_pressed = (player, action)
@@ -177,7 +188,7 @@ class KeyBindings:
 
         elif event.type == pygame.KEYDOWN and self.key_pressed:
             player, action = self.key_pressed
-            new_key = f"K_{pygame.key.name(event.key)}"
+            new_key = event.key
             self.config["key_bindings"][player][action] = new_key
             self.key_buttons[(player, action)].text = self.format_key(new_key)
             save_config(self.config)
@@ -186,8 +197,8 @@ class KeyBindings:
     def format_label(self, text):
         return text.replace("_", " ").title()
 
-    def format_key(self, text):
-        return text.replace("K_", "").upper()
+    def format_key(self, key_code):
+        return pygame.key.name(key_code).upper()
 
     def draw(self):
         y_offset = int(100 * self.scale) - self.scroll_offset * self.scroll_speed
@@ -500,17 +511,27 @@ class Main:
         self.in_settings = True
 
     def start_singleplayer(self):
-        from snake import SnakeGame
+        # from snake import SnakeGame
+        # print("Starting singleplayer mode...")
+        # self.in_game = True
+        # game = SnakeGame(self.screen)
+        # game.run()
+        # self.in_game = False
+        from snake import SinglePlayerGame
         print("Starting singleplayer mode...")
         self.in_game = True
-        game = SnakeGame(self.screen)
+        game = SinglePlayerGame(self.screen)
         game.run()
         self.in_game = False
 
 
     def start_multiplayer(self):
+        from snake import MultiPlayerGame
         print("Starting multiplayer mode...")
-        # TO.DO: Implement multiplayer game logic
+        self.in_game = True
+        game = MultiPlayerGame(self.screen)
+        game.run()
+        self.in_game = False
     
     def exit_game(self):
         print("Exiting game...")
