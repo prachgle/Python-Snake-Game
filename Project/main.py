@@ -298,7 +298,7 @@ class SettingsMenu:
             # f"{self.settings['window_size'][0]}x{self.settings['window_size'][1]}",
             f"{int(self.settings['music_volume'] * 100)}%",
             f"{int(self.settings['sound_effects_volume'] * 100)}%",
-            f"{int(self.settings['game_speed'] * 1)}"
+            f"{int(self.settings['game_speed'] * 10)}"
         ]
 
         def row_y(row_idx):
@@ -415,11 +415,11 @@ class SettingsMenu:
         save_config(self.settings)
 
     def increase_speed(self):
-        self.settings["game_speed"] = min(self.settings["game_speed"] + 1, 20.0)
+        self.settings["game_speed"] = min(self.settings["game_speed"] + 0.1, 4.0)
         save_config(self.settings)
 
     def decrease_speed(self):
-        self.settings["game_speed"] = max(self.settings["game_speed"] - 1, 1.0)
+        self.settings["game_speed"] = max(self.settings["game_speed"] - 0.1, 0.1)
         save_config(self.settings)
 
     def open_key_bindings(self):

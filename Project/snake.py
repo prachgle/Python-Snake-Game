@@ -18,7 +18,7 @@ DOWN = (0, 1)
 LEFT = (-1, 0)
 RIGHT = (1, 0)
 
-settings = load_config()
+
 
 class Snake():
     def __init__(self):
@@ -234,8 +234,10 @@ class SnakeGame:
         self.base_speed = 10
 
     def run(self):
-
+        print("Game start")
         pygame.mixer.init()
+
+        settings = load_config()
 
         # Load music and sound
         try:
@@ -257,7 +259,9 @@ class SnakeGame:
             print("Failed to load sound:", e)
 
         while True:
-            self.clock.tick(self.base_speed * self.snake.speed_modifier)
+            game_speed = settings["game_speed"]
+            print("Game speed:", game_speed)
+            self.clock.tick(self.base_speed * self.snake.speed_modifier * game_speed)
 
             if not self.snake.handle_keys(shift_sound=shift_sound):
                 break  # Exit the game loop and return to menu
