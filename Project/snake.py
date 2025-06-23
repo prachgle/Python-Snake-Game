@@ -1,9 +1,15 @@
 import pygame
 import random
 import sys
+import os
 from main import load_config
 
-FONT_PATH = "resources/Daydream.ttf"
+BASE_PATH = os.path.dirname(os.path.abspath(__file__))
+
+FONT_PATH = os.path.join(BASE_PATH, "resources", "Daydream.ttf")
+CONFIG_PATH = os.path.join(BASE_PATH, "resources", "config.json")
+SOUND_PATH = os.path.join(BASE_PATH, "resources", "sounds", "fruit.wav")
+
 TEXT_COLOR = (255, 255, 255)
 
 SCREEN_WIDTH = 1280
@@ -144,7 +150,6 @@ class SpeedBoost(Consumable):
         super().__init__(color=(0, 150, 0), points=5)
     
     def apply_effect(self, snake):
-        #snake.set_speed_modifier(1.75, duration=20)
         snake.speed_modifier = 1.75
         snake.effect_timer = 200
     
@@ -158,7 +163,6 @@ class SpeedDebuff(Consumable):
         super().__init__(color=(150, 0, 0))
     
     def apply_effect(self, snake):
-        #snake.set_speed_modifier(0.7, duration=10)
         snake.speed_modifier = 0.7
         snake.effect_timer = 100
     
@@ -197,21 +201,21 @@ def draw_grid(surface):
     for y in range(0, SCREEN_HEIGHT, GRID_SIZE):
         pygame.draw.line(surface, line_color, (0, y), (SCREEN_WIDTH, y))
 
-def game_over_screen(screen, snake, background, grid_surface, myfont, score, Multiplayer=False):
+def game_over_screen(screen, snake, background, grid_surface, myfont, score, multiplayer=False):
     while True:
         screen.blit(background, (0,0))
         screen.blit(grid_surface, (0,0))
 
         game_over_text = myfont.render("Game Over", True, TEXT_COLOR)
         restart_text = myfont.render("Press R to restart or ESC to EXIT", True, TEXT_COLOR)
-        if Multiplayer:
+        if multiplayer:
             score_text1 = myfont.render(f"Player1 Score: {score[0]}", True, TEXT_COLOR)
             score_text2 = myfont.render(f"Player2 Score: {score[1]}", True, TEXT_COLOR)
         else:
             score_text = myfont.render(f"Final Score: {score}", True, TEXT_COLOR)
 
         screen.blit(game_over_text, (SCREEN_WIDTH // 2 - 120, SCREEN_HEIGHT // 2 - 60))
-        if not Multiplayer:
+        if not multiplayer:
             screen.blit(score_text, (SCREEN_WIDTH // 2 - 140, SCREEN_HEIGHT // 2 - 25))
             screen.blit(restart_text, (SCREEN_WIDTH // 2 - 295, SCREEN_HEIGHT // 2 + 10))
         else:
@@ -335,8 +339,7 @@ class MultiPlayerGame(BaseSnakeGame):
         print("Multiplayer Game start")
         while True:
             game_speed = self.settings["game_speed"]
-            #self.clock.tick(self.base_speed * max(s.speed_modifier for s in self.snakes) * game_speed)
-            
+ 
             self.clock.tick(60)
 
             events = pygame.event.get()
@@ -352,15 +355,6 @@ class MultiPlayerGame(BaseSnakeGame):
             self.surface.blit(self.background, (0, 0))
             self.surface.blit(self.grid_surface, (0, 0))
 
-            # Move snakes and check collisions
-            # for snake in self.snakes:
-            #     if snake.should_move(self.base_speed, game_speed):
-            #         alive = snake.move()
-            #         if not alive:
-            #             self.death_sound.play()
-            #             ret = game_over_screen(self.screen, snake, self.background, self.grid_surface, self.font, snake.score)
-            #             if not ret:
-            #                 return
             for i, snake in enumerate(self.snakes):
                 if snake.should_move(self.base_speed, game_speed):
                     alive = snake.move()
@@ -417,93 +411,3 @@ class MultiPlayerGame(BaseSnakeGame):
 
             self.screen.blit(self.surface, (0, 0))
             pygame.display.update()
-
-
-# class SnakeGame:
-#     def __init__(self, screen):
-#         self.screen = screen
-#         self.clock = pygame.time.Clock()
-#         self.surface = pygame.Surface(screen.get_size()).convert()
-
-#         self.background = pygame.image.load("resources/background.jpg")
-#         self.background = pygame.transform.scale(self.background, (SCREEN_WIDTH, SCREEN_HEIGHT))
-
-#         self.grid_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-#         draw_grid(self.grid_surface)
-
-#         self.surface.blit(self.background, (0, 0))
-#         self.surface.blit(self.grid_surface, (0, 0))
-
-#         self.snake = Snake()
-#         self.foods = [get_random_food()]
-#         self.font = pygame.font.Font(FONT_PATH, 20)
-#         self.base_speed = 10
-
-#     def run(self):
-#         print("Game start")
-#         pygame.mixer.init()
-
-#         settings = load_config()
-
-#         # Load music and sound
-#         try:
-#             pygame.mixer.music.load("resources/music.mp3")
-#             pygame.mixer.music.set_volume(settings["music_volume"])
-#             pygame.mixer.music.play(-1)
-
-#             death_sound = pygame.mixer.Sound("resources/sounds/death.wav")
-#             death_sound.set_volume(settings["sound_effects_volume"])
-#             shift_sound = pygame.mixer.Sound("resources/sounds/shift.wav")
-#             shift_sound.set_volume(settings["sound_effects_volume"])
-#             eat_sound = pygame.mixer.Sound("resources/sounds/fruit.wav")
-#             eat_sound.set_volume(settings["sound_effects_volume"])
-#             speed_buff_sound = pygame.mixer.Sound("resources/sounds/buff.wav")
-#             speed_buff_sound.set_volume(settings["sound_effects_volume"])
-#             speed_debuff_sound = pygame.mixer.Sound("resources/sounds/debuff.wav")
-#             speed_debuff_sound.set_volume(settings["sound_effects_volume"])
-#         except pygame.error as e:
-#             print("Failed to load sound:", e)
-
-#         while True:
-#             game_speed = settings["game_speed"]
-#             self.clock.tick(self.base_speed * self.snake.speed_modifier * game_speed)
-#             if not self.snake.handle_keys(settings["key_bindings"]["player1"], shift_sound=shift_sound):
-#                 break  # Exit the game loop and return to menu
-
-#             adjust_food_count(self.foods, self.snake.score)
-
-#             self.surface.blit(self.background, (0, 0))
-#             self.surface.blit(self.grid_surface, (0, 0))
-
-#             alive = self.snake.move()
-#             if not alive:
-#                 death_sound.play()
-#                 ret = game_over_screen(self.screen, self.snake, self.background, self.grid_surface, self.font, self.snake.score)
-#                 if not ret:
-#                     break  # Return to main menu after game over
-
-#             head_pos = self.snake.get_head_position()
-#             for food in self.foods[:]:
-#                 if head_pos == food.position:
-#                     self.snake.length += 1
-#                     self.snake.score += food.points
-#                     if isinstance(food, SpeedBoost):
-#                         speed_buff_sound.play()
-#                         food.apply_effect(self.snake)
-#                     elif isinstance(food, SpeedDebuff):
-#                         speed_debuff_sound.play()
-#                         food.apply_effect(self.snake)
-#                     else:
-#                         eat_sound.play()
-#                     self.foods.remove(food)
-#                     self.foods.append(get_random_food())
-#                 food.draw(self.surface)
-
-#             self.snake.draw(self.surface)
-#             self.screen.blit(self.surface, (0, 0))
-#             self.surface.blit(self.grid_surface, (0, 0))
-
-#             score_text = self.font.render(f"Score {self.snake.score}", True, TEXT_COLOR)
-#             self.screen.blit(score_text, (5, 10))
-#             pygame.display.update()
-

@@ -5,10 +5,11 @@ import os
 import json
 
 
+BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 
-FONT_PATH = "resources/Daydream.ttf"
-CONFIG_PATH = "resources/config.json"
-SOUND_PATH = "resources/sounds/fruit.wav"
+FONT_PATH = os.path.join(BASE_PATH, "resources", "Daydream.ttf")
+CONFIG_PATH = os.path.join(BASE_PATH, "resources", "config.json")
+SOUND_PATH = os.path.join(BASE_PATH, "resources", "sounds", "fruit.wav")
 
 TEXT_COLOR = (255, 255, 255)
 
@@ -20,22 +21,51 @@ BUTTON_HOVER_COLOR = (120, 80, 100)
 
 # Load and save settings config
 def load_config():
-    if not os.path.exists(CONFIG_PATH):
-        raise FileNotFoundError("Config file not found.")
-    with open(CONFIG_PATH, "r") as file:
-        config = json.load(file)
-    for player in config["key_bindings"]:
-        for action in config["key_bindings"][player]:
-            key_str = config["key_bindings"][player][action]
-            if isinstance(key_str, str):  # Only convert if it's a string
-                config["key_bindings"][player][action] = getattr(pygame, key_str)
-    return config
+    try:
+        if not os.path.exists(CONFIG_PATH): 
+            raise FileNotFoundError("Config file not found.")
+        
+        with open(CONFIG_PATH, "r") as file:
+            config = json.load(file)
+
+        if "key_bindings" not in config:
+            raise KeyError("Key bindings not found in config.")
+
+        for player in config["key_bindings"]:
+            for action in config["key_bindings"][player]:
+                key_str = config["key_bindings"][player][action]
+                if isinstance(key_str, str): # Only convert if it's a string
+                    try:
+                        config["key_bindings"][player][action] = getattr(pygame, key_str)
+                    except AttributeError:
+                        raise ValueError(f"Invalid key binding: {key_str} for {player} - {action}")
+        return config
+
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON: {e}")
+    except (KeyError, ValueError) as e:
+        print(f"Error in config structure: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+    
+    return None
     
 def save_config(settings):
-    if not os.path.exists(CONFIG_PATH):
-        raise FileNotFoundError("Config file not found.")
-    with open(CONFIG_PATH, "w") as file:
-        json.dump(settings, file, indent=4)
+    try:
+        if not os.path.exists(CONFIG_PATH):
+            raise FileNotFoundError("Config file not found.")
+        
+        with open(CONFIG_PATH, "w") as file:
+            json.dump(settings, file, indent=4)
+    
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
 
 class BackgroundSnake:
     def __init__(self, screen):
@@ -182,7 +212,6 @@ class KeyBindings:
             btn.handle_event(event)
 
         if event.type == pygame.MOUSEWHEEL:
-            #self.scroll_offset -= event.y * 20 * self.scroll_speed
             self.scroll_offset -= event.y * 20
             self.scroll_offset = max(0, min(self.scroll_offset, self.get_max_scroll_offset()))
 
@@ -215,8 +244,6 @@ class KeyBindings:
             y_offset += self.box_height + int(30 * self.scale)
 
             for action, key in self.config["key_bindings"][player].items():
-                # label = self.font.render(self.format_label(action), True, TEXT_COLOR)
-                # self.screen.blit(label, (int(50 * self.scale), y_offset))
                 label_surface = self.font.render(self.format_label(action), True, TEXT_COLOR)
                 label_rect = label_surface.get_rect()
                 label_rect.right = self.screen_width // 2 - int(20 * self.scale)  # leave gap before button
@@ -260,8 +287,6 @@ class SettingsMenu:
         ]
 
         self.button_action = {
-            # "win_minus": (self.decrease_window_size, False),
-            # "win_plus": (self.increase_window_size, True),
             "music_minus": (self.decrease_music_volume, False),
             "music_plus": (self.increase_music_volume, True),   
             "sounds_minus": (self.decrease_sounds_volume, False),
@@ -275,7 +300,6 @@ class SettingsMenu:
         
         self.key_button = Button("Key Bindings", self.font, 0, 0, 250, 50, self.open_key_bindings)
         self.back_button = Button("Back", self.font, 0, 0, 120, 40, self.back_to_main_menu)
-        # self.static_buttons = [self.key_button, self.back_button]
 
         self.scroll_offset = 0
         self.scroll_speed = 40
@@ -302,11 +326,9 @@ class SettingsMenu:
             screen.blit(title_surface, title_surface.get_rect(center=(cx, int(80 * scale))))
 
         labels = [
-                # "Window Size", 
                   "Music Volume", 
                   "Sounds Volume", "Game Speed"]
         values = [
-            # f"{self.settings['window_size'][0]}x{self.settings['window_size'][1]}",
             f"{int(self.settings['music_volume'] * 100)}%",
             f"{int(self.settings['sound_effects_volume'] * 100)}%",
             f"{int(self.settings['game_speed'] * 10)}"
@@ -327,8 +349,6 @@ class SettingsMenu:
         def pos(i, side):
             return (cx + int(side * 100 * scale), row_y(i) + button_offset)
         
-        # self.buttons["win_minus"].center = pos(0, -1)
-        # self.buttons["win_plus"].center = pos(0, 1)
         self.buttons["music_minus"].center = pos(0, -1)
         self.buttons["music_plus"].center = pos(0, 1)
         self.buttons["sounds_minus"].center = pos(1, -1)
@@ -472,8 +492,6 @@ class Main:
             pygame.mixer.music.load("resources/music.mp3")
             pygame.mixer.music.set_volume(self.settings["music_volume"])
             pygame.mixer.music.play(-1)
-            # sound = pygame.mixer.Sound("resources/sounds/fruit.wav")
-            # sound.set_volume(load_config["sound_effects_volume"])
         except pygame.error as e:
             print("Failed to load music:", e)
         
@@ -511,12 +529,6 @@ class Main:
         self.in_settings = True
 
     def start_singleplayer(self):
-        # from snake import SnakeGame
-        # print("Starting singleplayer mode...")
-        # self.in_game = True
-        # game = SnakeGame(self.screen)
-        # game.run()
-        # self.in_game = False
         from snake import SinglePlayerGame
         print("Starting singleplayer mode...")
         self.in_game = True
@@ -542,17 +554,11 @@ class Main:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.exit_game()
-            # elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE and self.in_game:
-            #     self.in_game = False
-            #     self.game_screen = None
 
             if self.in_settings:
                 self.settings_menu.handle_event(event)
             elif self.in_key_bindings:
                 self.key_bindings_menu.handle_event(event)
-            # elif self.in_game:
-            #     keys = pygame.key.get_pressed()
-            #     self.game_screen.handle_input(keys)
             else:
                 for button in self.buttons:
                     button.handle_event(event)
