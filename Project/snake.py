@@ -179,7 +179,7 @@ def get_random_food():
 def adjust_food_count(foods, score):
     desired_count = 1
 
-    if score >= 200:
+    if 200 <= score < 1000:
         desired_count = 3
     elif score >= 1000:
         desired_count = 5
