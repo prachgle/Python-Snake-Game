@@ -2,6 +2,7 @@ import pygame
 import random
 import sys
 import os
+import time
 from main import load_config
 
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -36,6 +37,7 @@ class Snake():
         self.speed_modifier = 1
         self.effect_timer = 0
         self.move_timer = 0
+        self.paused = False
 
     def should_move(self, base_speed, game_speed):
         self.move_timer += 1
@@ -70,6 +72,8 @@ class Snake():
         if len(self.position) > 2 and new in self.position[2:]:
             return False
         else:
+            if self.paused:
+                return True
             self.position.insert(0, new)
             if len(self.position) > self.length:
                 self.position.pop()
@@ -94,7 +98,9 @@ class Snake():
                 return False
             elif event.type == pygame.KEYDOWN:
                 if event.key == keys["pause"]:
-                    return False  # Signal to quit snake game loop
+                    self.paused = not self.paused
+                elif event.key == pygame.K_BACKSPACE:
+                    return False
                 elif event.key == keys["move_up"]:
                     self.turn(UP)
                 elif event.key == keys["move_down"]:
@@ -164,8 +170,7 @@ class SpeedDebuff(Consumable):
     
     def apply_effect(self, snake):
         snake.speed_modifier = 0.7
-        snake.effect_timer = 100
-    
+        snake.effect_timer = 18    
     def draw(self, surface):
         r = pygame.Rect((self.position[0], self.position[1]), (GRID_SIZE, GRID_SIZE))
         pygame.draw.rect(surface, self.color, r)
@@ -200,6 +205,30 @@ def draw_grid(surface):
     # Draw horizontal lines
     for y in range(0, SCREEN_HEIGHT, GRID_SIZE):
         pygame.draw.line(surface, line_color, (0, y), (SCREEN_WIDTH, y))
+
+def pause(screen, snake, keys, background, grid_surface, myfont):
+    while snake.paused:
+        screen.blit(background, (0,0))
+        screen.blit(grid_surface, (0,0))
+        pause_text = myfont.render("Game Paused", True, TEXT_COLOR)
+        resume_text = myfont.render("Press R to resume or BACKSPACE to EXIT", True, TEXT_COLOR)
+        screen.blit(pause_text, (SCREEN_WIDTH // 2 - 160, SCREEN_HEIGHT // 2 - 60))
+        screen.blit(resume_text, (SCREEN_WIDTH // 2 - 380, SCREEN_HEIGHT // 2 - 25))
+
+        pygame.display.update()
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    snake.paused = False
+                    return True
+                elif event.key == pygame.K_BACKSPACE:
+                    return False
+            
+    
 
 def game_over_screen(screen, snake, background, grid_surface, myfont, score, multiplayer=False):
     while True:
@@ -283,7 +312,6 @@ class SinglePlayerGame(BaseSnakeGame):
         print("Single Player Game start")
         while True:
             self.clock.tick(self.base_speed * self.snake.speed_modifier * self.settings["game_speed"])
-            
             events = pygame.event.get()
 
             if not self.snake.handle_keys(self.settings["key_bindings"]["player1"], events, shift_sound=self.shift_sound):
@@ -293,6 +321,11 @@ class SinglePlayerGame(BaseSnakeGame):
 
             self.surface.blit(self.background, (0, 0))
             self.surface.blit(self.grid_surface, (0, 0))
+
+            if self.snake.paused:
+                ret = pause(self.screen, self.snake, self.settings["key_bindings"]["player1"], self.background, self.grid_surface, self.font)
+                if not ret:
+                    break
 
             alive = self.snake.move()
             if not alive:
@@ -341,7 +374,6 @@ class MultiPlayerGame(BaseSnakeGame):
             game_speed = self.settings["game_speed"]
  
             self.clock.tick(60)
-
             events = pygame.event.get()
 
             keys_p1 = self.settings["key_bindings"]["player1"]
@@ -363,6 +395,11 @@ class MultiPlayerGame(BaseSnakeGame):
                     other_snake = self.snakes[1 - i]
                     if snake.get_head_position() in other_snake.position:
                         alive = False
+
+                    if snake.paused:
+                        ret = pause(self.screen, snake, self.settings["key_bindings"]["player1"], self.background, self.grid_surface, self.font)
+                        if not ret:
+                            return
 
                     if not alive:
                         self.death_sound.play()
